@@ -14,11 +14,14 @@ def get_link(html):
         if i['href'].split('/')[0] == "http:":
             ETF_link.append(i['href'])
 
+with open('auth.json', 'r') as f:
+    auth = json.load(f)
+
 url = "https://s20.si0.kabu.co.jp/members/"
 driver = webdriver.Chrome(executable_path='chromedriver')
 driver.get(url)
-driver.find_element_by_name('SsLogonUser').send_keys('01401160')
-driver.find_element_by_name('SsLogonPassword').send_keys('795100')
+driver.find_element_by_name('SsLogonUser').send_keys(auth['id'])
+driver.find_element_by_name('SsLogonPassword').send_keys(auth['APIPassword'])
 driver.find_element_by_id('image1').click()
 driver.find_element_by_name('nav_g_02').click()
 driver.find_element_by_link_text('フリーETF (手数料無料ETF)').click()
