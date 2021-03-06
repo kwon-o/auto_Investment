@@ -1,5 +1,6 @@
 import pandas as pd
 import requests
+import json
 from selenium import webdriver
 from bs4 import BeautifulSoup
 
@@ -27,11 +28,9 @@ driver.find_element_by_name('nav_g_02').click()
 driver.find_element_by_link_text('フリーETF (手数料無料ETF)').click()
 get_link(driver.page_source)
 s = requests.Session()
-headers = {'User-Agent' : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36"}
-s.headers.update(headers)
+
 for cookie in driver.get_cookie():
-    c = {cookie['name'] : cookie['value']}
-    s.cookies.update(c)
+    s.cookies.set(cookie['name'], cookie['value'])
 link_list = ["https://s20.si0.kabu.co.jp/ap/PC/Stocks/Stock/Search/ByKeyword?PageNo=2&Keyword=%e3%83%95%e3%83%aa%e3%83%bcETF&SortType.Value=0",
              "https://s20.si0.kabu.co.jp/ap/PC/Stocks/Stock/Search/ByKeyword?PageNo=3&Keyword=%e3%83%95%e3%83%aa%e3%83%bcETF&SortType.Value=0",
              "https://s20.si0.kabu.co.jp/ap/PC/Stocks/Stock/Search/ByKeyword?PageNo=4&Keyword=%e3%83%95%e3%83%aa%e3%83%bcETF&SortType.Value=0",
