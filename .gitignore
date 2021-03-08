@@ -3,3 +3,4 @@ csv
 *.csv
 *.json
 check.ipynb
+.ipynb_checkpoints
