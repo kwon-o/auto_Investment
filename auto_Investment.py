@@ -19,28 +19,16 @@ def get_token():
     return json.loads(response.text)['Token']
 
 
-def get_info():
-    url = 'http://localhost:18080/kabusapi/board/1570@1'
+def get_current_price(code):
+    url = 'http://localhost:18080/kabusapi/board/' + str(code) + '@1'
     req = urllib.request.Request(url, method='GET')
     req.add_header('Content-Type', 'application/json')
     req.add_header('X-API-KEY', get_token())
 
-    try:
-        with urllib.request.urlopen(req) as res:
-            print(res.status, res.reason)
-            for header in res.getheaders():
-                print(header)
-            print()
-            content = json.loads(res.read())
-            pprint.pprint(content)
-    except urllib.error.HTTPError as e:
-        print(e)
-        content = json.loads(e.read())
-        pprint.pprint(content)
-    except Exception as e:
-        print(e)
+    with urllib.request.urlopen(req) as res:
+        content = json.loads(res.read())
+
+    return content['CurrentPrice'], content['AskPrice'], content['BidPrice']
 
 
-get_info()
-
-
+print(get_current_price('1305'))
