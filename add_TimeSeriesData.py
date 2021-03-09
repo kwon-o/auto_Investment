@@ -46,7 +46,7 @@ for i in ETF_Link:
 
     result = pd.DataFrame(df)
     load = pd.read_csv(etfNum + '.csv', encoding='utf-8')
-    result = pd.concat([result[:1], load[1:]])
+    result = pd.concat([result[:1], load[0:]])
     result = result.drop_duplicates()
     result.to_csv(etfNum + '.csv', index=False, encoding='utf-8')
 
