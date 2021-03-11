@@ -52,6 +52,10 @@ class DBUpdater:
                 self.conn.commit()
                 print('')
 
+
+    def read_Time_Series_Data(self, code, company):
+        return None
+
     def select_comp_info(self):
         sql = "SELECT * FROM company_info"
         df = pd.read_sql(sql, self.conn)

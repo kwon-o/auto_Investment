@@ -14,15 +14,15 @@ def get_token():
     json_data = json.dumps(
         {'APIPassword': auth['APIPassword'], }
     ).encode('utf8')
-    url = 'http://localhost:18080/kabusapi/token'
+    url = 'http://localhost:18081/kabusapi/token'
 
     response = requests.post(url, data=json_data, headers=headers)
 
     return json.loads(response.text)['Token']
 
-url = 'http://localhost:18080/kabusapi/symbolname/future'
-params = { 'FutureCode': 'NK225', 'DerivMonth': 0 }
-
+url = 'http://localhost:18081/kabusapi/positions'
+params = { 'product': 0 }   # product - 0:すべて、1:現物、2:信用、3:先物、4:OP
+#params['symbol'] = '9433'  # symbol='xxxx'
 req = urllib.request.Request('{}?{}'.format(url, urllib.parse.urlencode(params)), method='GET')
 req.add_header('Content-Type', 'application/json')
 req.add_header('X-API-KEY', get_token())
