@@ -95,12 +95,13 @@ def get_stock_balance(code):
         content = json.loads(res.read())
 
     stocks = [{'code': 0, 'name': 'a', 'qty': 0}]
-    # for i in range(content):
-    #     stock_code = content['Symbol']
-    #     stock_name = content['SymbolName']
-    #     stock_qty = content['LeavesQty']
-    #     dbgout(str(i) + ' ' + stock_code + '( ' + stock_name + ' )' + ' : ' + str(stock_qty))
-    #     stocks.append({'code': stock_qty, 'name': stock_name, 'qty': stock_qty})
+    if len(content) > 0:
+        for i in range(content):
+            stock_code = content['Symbol']
+            stock_name = content['SymbolName']
+            stock_qty = content['LeavesQty']
+            dbgout(str(i) + ' ' + stock_code + '( ' + stock_name + ' )' + ' : ' + str(stock_qty))
+            stocks.append({'code': stock_qty, 'name': stock_name, 'qty': stock_qty})
     return stocks
 
 
@@ -123,7 +124,7 @@ def buy_etf(code):
         buy_qty = 0
         if ask_price > 0:
             buy_qty = buy_amount // ask_price
-        stock_name, stock_qty = get_stock_balance(code)[0]
+        stock_name, stock_qty = get_stock_balance(code)[0]['name'], get_stock_balance(code)[0]['qyt']
 
         if current_price >= target_price and current_price >= ma5_price and current_price >= ma10_price and ma5_price > ma10_price:
             print(stock_name + '(' + str(code) + ') ' + str(buy_qty) + 'EA : ' + str(current_price) +
@@ -245,7 +246,7 @@ def dbgout(message):
 
 if __name__ == '__main__':
     # try:
-    symbol_list = ["1319", "1308", "1324", "1345", "1615", "1678", "1682", "1305", "1306"]
+    symbol_list = ["1319", "1308", "1324", "1345", "1615", "1678", "1682", "1305", "1306", "9107", "6070"]
     bought_list = []
     target_buy_count = 5
     buy_percent = 0.19
