@@ -85,8 +85,6 @@ def get_movingaverage(code, window):
 def get_stock_balance(code):
     url = 'http://localhost:18081/kabusapi/positions'
     params = {'product': 1}  # product - 0:すべて、1:現物、2:信用、3:先物、4:OP
-    if code is not 'ALL':
-        params['symbol'] = code  # symbol='xxxx'
     req = urllib.request.Request('{}?{}'.format(url, urllib.parse.urlencode(params)), method='GET')
     req.add_header('Content-Type', 'application/json')
     req.add_header('X-API-KEY', get_token())
@@ -94,15 +92,36 @@ def get_stock_balance(code):
     with urllib.request.urlopen(req) as res:
         content = json.loads(res.read())
 
-    stocks = [{'code': 0, 'name': 'a', 'qty': 0}]
     if len(content) > 0:
+        allStocks = []
         for i in range(content):
             stock_code = content['Symbol']
             stock_name = content['SymbolName']
             stock_qty = content['LeavesQty']
-            dbgout(str(i) + ' ' + stock_code + '( ' + stock_name + ' )' + ' : ' + str(stock_qty))
-            stocks.append({'code': stock_qty, 'name': stock_name, 'qty': stock_qty})
-    return stocks
+            if code == 'ALL':
+                dbgout(str(i) + ' ' + stock_code + '( ' + stock_name + ' )' + ' : ' + str(stock_qty))
+                allStocks.append({'code': stock_qty, 'name': stock_name, 'qty': stock_qty})
+            if stock_code == code:
+                return stock_code, stock_qty
+        if code == 'ALL':
+            return allStocks
+    elif code is not 'ALL':
+        try:
+            url = 'http://localhost:18080/kabusapi/symbol/' + str(code) + '@1'
+            req = urllib.request.Request(url, method='GET')
+            req.add_header('Content-Type', 'application/json')
+            req.add_header('X-API-KEY', get_token())
+
+            with urllib.request.urlopen(req) as res:
+                content = json.loads(res.read())
+            stock_code = content['SymbolName']
+            return stock_code, 0
+        except urllib.error.HTTPError as e:
+            print(e)
+            content = json.loads(e.read())
+            pprint.pprint(content)
+        except Exception as e:
+            print(e)
 
 
 def buy_etf(code):
@@ -175,14 +194,14 @@ def sell_all():
             auth = json.load(f)
 
         while True:
-            stocks = get_stock_balance('ALL')
+            sellStocks = get_stock_balance('ALL')
             total_qty = 0
-            for s in stocks:
+            for s in sellStocks:
                 total_qty += s['qty']
             if total_qty == 0:
                 return True
 
-            for s in stocks:
+            for s in sellStocks:
                 if s['qty'] != 0:
                     obj = {'Password': auth['APIPassword'],
                            'Symbol': s['code'],
@@ -245,47 +264,47 @@ def dbgout(message):
 
 
 if __name__ == '__main__':
-    # try:
-    symbol_list = ["1319", "1308", "1324", "1345", "1615", "1678", "1682", "1305", "1306", "9107", "6070"]
-    bought_list = []
-    target_buy_count = 5
-    buy_percent = 0.19
-    total_cash = int(get_current_cash())
-    stocks = get_stock_balance('ALL')
-    buy_amount = total_cash * buy_percent
-    print('total cash : ', total_cash)
-    print('buy percent : ', buy_percent)
-    print('buy_amount : ', buy_amount)
-    print('start time : ', datetime.datetime.now().strftime('%m/%d %H:%M:%S'))
+    try:
+        symbol_list = ["1319", "1308", "1324", "1345", "1615", "1678", "1682", "1305", "1306", "9107", "6070"]
+        bought_list = []
+        target_buy_count = 5
+        buy_percent = 0.19
+        total_cash = int(get_current_cash())
+        stocks = get_stock_balance('ALL')
+        buy_amount = total_cash * buy_percent
+        print('total cash : ', total_cash)
+        print('buy percent : ', buy_percent)
+        print('buy_amount : ', buy_amount)
+        print('start time : ', datetime.datetime.now().strftime('%m/%d %H:%M:%S'))
 
-    while True:
-        t_now = datetime.datetime.now()
-        t_start = t_now.replace(hour=9, minute=5, second=0, microsecond=0)
-        t_sell = t_now.replace(hour=14, minute=45, second=0, microsecond=0)
-        t_exit = t_now.replace(hour=14, minute=58, second=0, microsecond=0)
+        while True:
+            t_now = datetime.datetime.now()
+            t_start = t_now.replace(hour=9, minute=5, second=0, microsecond=0)
+            t_sell = t_now.replace(hour=14, minute=45, second=0, microsecond=0)
+            t_exit = t_now.replace(hour=14, minute=58, second=0, microsecond=0)
 
-        today = datetime.datetime.today().weekday()
-        if today == 5 or today == 6:
-            print('Today is', 'Saturday.' if today == 5 else 'Sunday.')
-            sys.exit(0)
-
-        if t_start < t_now < t_sell :
-            for sym in symbol_list:
-                if len(bought_list) < target_buy_count:
-                    buy_etf(sym)
-                    time.sleep(1)
-            if t_now.minute == 30 and 0 <= t_now.second <= 5:
-                get_stock_balance('ALL')
-                time.sleep(5)
-        if t_sell < t_now < t_exit:
-            if sell_all() == True:
-                dbgout('sell_all() returned True -> self-destructed!')
+            today = datetime.datetime.today().weekday()
+            if today == 5 or today == 6:
+                print('Today is', 'Saturday.' if today == 5 else 'Sunday.')
                 sys.exit(0)
-        if t_exit < t_now:
-            dbgout('self-destructed!')
-            sys.exit(0)
 
-        time.sleep(3)
+            if t_start < t_now < t_sell :
+                for sym in symbol_list:
+                    if len(bought_list) < target_buy_count:
+                        buy_etf(sym)
+                        time.sleep(1)
+                if t_now.minute == 30 and 0 <= t_now.second <= 5:
+                    get_stock_balance('ALL')
+                    time.sleep(5)
+            if t_sell < t_now < t_exit:
+                if sell_all() == True:
+                    dbgout('sell_all() returned True -> self-destructed!')
+                    sys.exit(0)
+            if t_exit < t_now:
+                dbgout('self-destructed!')
+                sys.exit(0)
 
-    # except Exception as ex:
-    #     dbgout('main -> excption! ' + str(ex) + '')
+            time.sleep(3)
+
+    except Exception as ex:
+        dbgout('main -> excption! ' + str(ex) + '')

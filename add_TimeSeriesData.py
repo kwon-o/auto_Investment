@@ -14,7 +14,7 @@ driver = webdriver.Chrome(
     executable_path=r'C:\Users\KOJ\PycharmProjects\untitled\GitMaster\auto_Investment\chromedriver')
 driver.get(url)
 driver.find_element_by_name('SsLogonUser').send_keys(auth['id'])
-driver.find_element_by_name('SsLogonPassword').send_keys(auth['APIPassword'])
+driver.find_element_by_name('SsLogonPassword').send_keys(auth['loginPw'])
 driver.find_element_by_id('image1').click()
 
 s = requests.Session()
