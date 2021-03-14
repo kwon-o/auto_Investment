@@ -1,7 +1,9 @@
 import pandas as pd
 import mysql.connector as mydb
+import numpy as np
 import json
-import calendar
+import requests
+import time
 from datetime import datetime
 from selenium import webdriver
 from bs4 import BeautifulSoup
@@ -22,6 +24,10 @@ class DBUpdater:
         self.cursor = self.conn.cursor()
         self.conn.commit()
         self.codes = dict()
+        self.session = requests.Session()
+
+        with open('auth.json', 'r') as f:
+            self.auth = json.load(f)
 
     @staticmethod
     def read_stock_code():
@@ -75,6 +81,53 @@ class DBUpdater:
         except ImportError:
             return None
 
+    def get_session(self):
+        url = "https://s20.si0.kabu.co.jp/members/"
+        driver = webdriver.Chrome(
+            executable_path=r'C:\Users\KOJ\PycharmProjects\untitled\GitMaster\auto_Investment\chromedriver')
+        driver.get(url)
+        driver.find_element_by_name('SsLogonUser').send_keys(self.auth['id'])
+        driver.find_element_by_name('SsLogonPassword').send_keys(self.auth['loginPw'])
+        driver.find_element_by_id('image1').click()
+        for cookie in driver.get_cookies():
+            self.session.cookies.set(cookie['name'], cookie['value'])
+        return self.session
+
+
+    def add_Time_Series_data(self):
+
+        self.get_session()
+        session_Count = 0
+        for code in self.codes:
+            if session_Count > 60:
+                self.get_session()
+                session_Count = 0
+            timeSeriesLink = "https://s20.si0.kabu.co.jp/ap/PC/InvInfo/Market/StockDetail/Default?Symbol=" \
+                             + code + "&Exchange=TSE&Category=PRICE_HISTORY"
+            result = self.session.get(timeSeriesLink).text
+            soup = BeautifulSoup(result, "html.parser")
+            table = soup.find_all("table", class_="tb3")
+            try:
+                df = pd.read_html(str(table), header=0)[0]
+            except ValueError:
+                continue
+            df = df.drop("前日比", axis=1)
+            df = df.rename(columns={'基準日': 'date', '始値': 'open', '高値': 'high', '安値': 'low', '終値': 'close', '出来高': 'volume'})
+
+            def fix_date(row):
+                return row.split('(')[0]
+
+            df['date'] = df['date'].apply(fix_date)
+            df.replace('/', '-')
+            df = df.replace('--', np.nan)
+            df = df.dropna(axis=0)
+            df = pd.DataFrame(df)
+
+            self.replace_into_db(df, code)
+            print('Code ' + code + ': Time series data replace was successful!')
+            session_Count += 1
+        print('Replace All successful!')
+
     def replace_into_db(self, df, code):
         with self.conn.cursor() as curs:
             for r in df.itertuples():
@@ -92,7 +145,8 @@ class DBUpdater:
 
     def execute_daily(self):
         self.update_comp_info()
-        self.update_daily_price()
+        # self.update_daily_price() # Run only the first time
+        self.add_Time_Series_data()
 
 
 if __name__ == '__main__':

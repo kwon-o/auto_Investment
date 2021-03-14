@@ -18,6 +18,7 @@ driver.find_element_by_name('SsLogonPassword').send_keys(auth['loginPw'])
 driver.find_element_by_id('image1').click()
 
 s = requests.Session()
+print(type(s))
 for cookie in driver.get_cookies():
     s.cookies.set(cookie['name'], cookie['value'])
 
@@ -49,5 +50,6 @@ for i in ETF_Link:
     result = pd.concat([result[:1], load[0:]])
     result = result.drop_duplicates()
     result.to_csv(etfNum + '.csv', index=False, encoding='utf-8')
+    break
 
 driver.close()
