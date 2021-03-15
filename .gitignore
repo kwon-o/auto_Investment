@@ -1,4 +1,6 @@
 csv
+log
+*.log
 *.exe
 *.csv
 *.json
