@@ -307,7 +307,9 @@ class autoInvestment:
         print(datetime.datetime.now().strftime('[%m/%d %H:%M:%S]'), message)
         toSlackMsg = {"text": self.t_now.strftime('[%m/%d %H:%M:%S]') + message}
         slack_webhook_url = self.auth["slackUrl"]
-        headers = {"Content-type": "application/json"}
+        headers = {
+            "Content-type": "application/json",
+            "Authorization": "Bearer " + self.auth["slackToken"]}
         requests.post(slack_webhook_url, headers=headers, data=json.dumps(toSlackMsg))
 
 

@@ -21,10 +21,9 @@ class DBUpdater:
             db="investar",
             charset="utf8"
         )
-        self.cursor = self.conn.cursor()
-        self.conn.commit()
         self.codes = dict()
         self.session = requests.Session()
+        self.update_flg = 0
 
     @staticmethod
     def read_stock_code():
@@ -55,6 +54,8 @@ class DBUpdater:
                     print(f"[{tmnow}] {idx:04d} REPLACE INTO company_info VALUES ({code}, {company}, {today})")
                 self.conn.commit()
                 print('')
+                self.update_flg = 1
+            self.conn.close()
 
     @staticmethod
     def read_Time_Series_Data(code):
@@ -125,6 +126,7 @@ class DBUpdater:
                       f"{r.low},{r.close},{r.volume})"
                 curs.execute(sql)
             self.conn.commit()
+            self.conn.close()
 
     def update_daily_price(self):
         for code in self.codes:
@@ -136,10 +138,13 @@ class DBUpdater:
     def execute_daily(self):
         self.update_comp_info()
         # self.update_daily_price() # Run only the first time
-        self.add_Time_Series_data()
+        if self.update_flg == 1:
+            self.add_Time_Series_data()
         toSlackMsg = {"text": datetime.now().strftime('[%m/%d %H:%M:%S]') + 'Database Update successful!'}
         slack_webhook_url = self.auth["slackUrl"]
-        headers = {"Content-type": "application/json"}
+        headers = {
+            "Content-type": "application/json",
+            "Authorization": "Bearer " + self.auth["slackToken"]}
         requests.post(slack_webhook_url, headers=headers, data=json.dumps(toSlackMsg))
 
 
