@@ -1,5 +1,6 @@
 csv
 log
+test
 *.log
 *.exe
 *.csv
