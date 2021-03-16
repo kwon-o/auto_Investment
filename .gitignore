@@ -1,6 +1,11 @@
 test
 log
+<<<<<<< HEAD
 csv
+=======
+test
+*.log
+>>>>>>> df1434f (add ignore list)
 *.exe
 *.csv
 *.json
