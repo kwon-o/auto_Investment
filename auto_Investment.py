@@ -259,8 +259,19 @@ def get_current_cash():
     return df[1][1]
 
 
+<<<<<<< HEAD
 def dbgout(message):
     print(datetime.datetime.now().strftime('[%m/%d %H:%M:%S]'), message)
+=======
+    def dbgout(self, message):
+        print(datetime.datetime.now().strftime('[%m/%d %H:%M:%S]'), message)
+        toSlackMsg = {"text": self.t_now.strftime('[%m/%d %H:%M:%S]') + message}
+        slack_webhook_url = self.auth["slackUrl"]
+        headers = {
+            "Content-type": "application/json",
+            "Authorization": "Bearer " + self.auth["slackToken"]}
+        requests.post(slack_webhook_url, headers=headers, data=json.dumps(toSlackMsg))
+>>>>>>> b31ca67 (2021/03/16)
 
 
 if __name__ == '__main__':
