@@ -1,17 +1,7 @@
-test
 log
-<<<<<<< HEAD
 csv
-<<<<<<< HEAD
-=======
 test
 *.log
->>>>>>> df1434f (add ignore list)
-=======
-log
-test
-*.log
->>>>>>> 9fb0c0047032f464c5eae991702cc48d4e2ccf5f
 *.exe
 *.csv
 *.json

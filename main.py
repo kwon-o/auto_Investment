@@ -303,13 +303,6 @@ class autoInvestment:
 
         return df[1][1]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-def dbgout(message):
-    print(datetime.datetime.now().strftime('[%m/%d %H:%M:%S]'), message)
-=======
-=======
->>>>>>> 9fb0c0047032f464c5eae991702cc48d4e2ccf5f
     def dbgout(self, message):
         print(datetime.datetime.now().strftime('[%m/%d %H:%M:%S]'), message)
         toSlackMsg = {"text": self.t_now.strftime('[%m/%d %H:%M:%S]') + message}
@@ -318,10 +311,6 @@ def dbgout(message):
             "Content-type": "application/json",
             "Authorization": "Bearer " + self.auth["slackToken"]}
         requests.post(slack_webhook_url, headers=headers, data=json.dumps(toSlackMsg))
-<<<<<<< HEAD
->>>>>>> b31ca67 (2021/03/16)
-=======
->>>>>>> 9fb0c0047032f464c5eae991702cc48d4e2ccf5f
 
 
 if __name__ == '__main__':

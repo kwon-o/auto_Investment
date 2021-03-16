@@ -24,12 +24,7 @@ class DBUpdater:
         self.codes = dict()
         self.session = requests.Session()
         self.update_flg = 0
-<<<<<<< HEAD
 
-        with open('auth.json', 'r') as f:
-            self.auth = json.load(f)
-=======
->>>>>>> 9fb0c0047032f464c5eae991702cc48d4e2ccf5f
 
     @staticmethod
     def read_stock_code():
@@ -144,12 +139,6 @@ class DBUpdater:
     def execute_daily(self):
         self.update_comp_info()
         # self.update_daily_price() # Run only the first time
-<<<<<<< HEAD
-<<<<<<< HEAD
-        self.add_Time_Series_data()
-=======
-=======
->>>>>>> 9fb0c0047032f464c5eae991702cc48d4e2ccf5f
         if self.update_flg == 1:
             self.add_Time_Series_data()
         toSlackMsg = {"text": datetime.now().strftime('[%m/%d %H:%M:%S]') + 'Database Update successful!'}
@@ -158,10 +147,6 @@ class DBUpdater:
             "Content-type": "application/json",
             "Authorization": "Bearer " + self.auth["slackToken"]}
         requests.post(slack_webhook_url, headers=headers, data=json.dumps(toSlackMsg))
-<<<<<<< HEAD
->>>>>>> b31ca67 (2021/03/16)
-=======
->>>>>>> 9fb0c0047032f464c5eae991702cc48d4e2ccf5f
 
 
 if __name__ == '__main__':
