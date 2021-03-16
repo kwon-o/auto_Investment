@@ -3,7 +3,7 @@ import mysql.connector as mydb
 import numpy as np
 import json
 import requests
-import time
+import sys
 from datetime import datetime
 from selenium import webdriver
 from bs4 import BeautifulSoup
@@ -12,21 +12,24 @@ from bs4 import BeautifulSoup
 class DBUpdater:
     def __init__(self):
         with open('auth.json', 'r') as f:
-            _auth = json.load(f)
+            self.auth = json.load(f)
         self.conn = mydb.connect(
             host="localhost",
             port="3306",
             user="root",
-            password=_auth["DBPassword"],
+            password=self.auth["DBPassword"],
             db="investar",
             charset="utf8"
         )
         self.codes = dict()
         self.session = requests.Session()
         self.update_flg = 0
+<<<<<<< HEAD
 
         with open('auth.json', 'r') as f:
             self.auth = json.load(f)
+=======
+>>>>>>> 9fb0c0047032f464c5eae991702cc48d4e2ccf5f
 
     @staticmethod
     def read_stock_code():
@@ -44,7 +47,7 @@ class DBUpdater:
             rs = curs.fetchone()
             today = datetime.today().strftime('%Y-%m-%d')
 
-            if rs[0] == None or rs[0].strftime('%Y-%m-%d') < today:
+            if None == rs[0] or rs[0].strftime('%Y-%m-%d') < today:
                 stockCode = self.read_stock_code()
                 for idx in range(len(stockCode)):
                     code = stockCode.code.values[idx]
@@ -94,15 +97,9 @@ class DBUpdater:
             self.session.cookies.set(cookie['name'], cookie['value'])
         return self.session
 
-
     def add_Time_Series_data(self):
-
         self.get_session()
-        session_Count = 0
         for code in self.codes:
-            if session_Count > 60:
-                self.get_session()
-                session_Count = 0
             timeSeriesLink = "https://s20.si0.kabu.co.jp/ap/PC/InvInfo/Market/StockDetail/Default?Symbol=" \
                              + code + "&Exchange=TSE&Category=PRICE_HISTORY"
             result = self.session.get(timeSeriesLink).text
@@ -113,7 +110,8 @@ class DBUpdater:
             except ValueError:
                 continue
             df = df.drop("前日比", axis=1)
-            df = df.rename(columns={'基準日': 'date', '始値': 'open', '高値': 'high', '安値': 'low', '終値': 'close', '出来高': 'volume'})
+            df = df.rename(columns={'基準日': 'date', '始値': 'open', '高値': 'high', '安値': 'low',
+                                    '終値': 'close', '出来高': 'volume'})
 
             def fix_date(row):
                 return row.split('(')[0]
@@ -126,8 +124,6 @@ class DBUpdater:
 
             self.replace_into_db(df, code)
             print('Code ' + code + ': Time series data replace was successful!')
-            session_Count += 1
-        print('Replace All successful!')
 
     def replace_into_db(self, df, code):
         with self.conn.cursor() as curs:
@@ -149,8 +145,11 @@ class DBUpdater:
         self.update_comp_info()
         # self.update_daily_price() # Run only the first time
 <<<<<<< HEAD
+<<<<<<< HEAD
         self.add_Time_Series_data()
 =======
+=======
+>>>>>>> 9fb0c0047032f464c5eae991702cc48d4e2ccf5f
         if self.update_flg == 1:
             self.add_Time_Series_data()
         toSlackMsg = {"text": datetime.now().strftime('[%m/%d %H:%M:%S]') + 'Database Update successful!'}
@@ -159,9 +158,16 @@ class DBUpdater:
             "Content-type": "application/json",
             "Authorization": "Bearer " + self.auth["slackToken"]}
         requests.post(slack_webhook_url, headers=headers, data=json.dumps(toSlackMsg))
+<<<<<<< HEAD
 >>>>>>> b31ca67 (2021/03/16)
+=======
+>>>>>>> 9fb0c0047032f464c5eae991702cc48d4e2ccf5f
 
 
 if __name__ == '__main__':
+    weekday = datetime.today().weekday()
     dbu = DBUpdater()
-    dbu.execute_daily()
+    if weekday in [0, 1, 2, 3, 4]:
+        dbu.execute_daily()
+    else:
+        sys.exit(0)
