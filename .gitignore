@@ -7,3 +7,4 @@ test
 *.json
 check.ipynb
 .ipynb_checkpoints
+main_test.py
