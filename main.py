@@ -18,15 +18,15 @@ class autoInvestment:
 
         headers = {'content-type': 'application/json'}
         json_data = json.dumps({'APIPassword': self.auth['APIPassword'], }).encode('utf8')
-        url = 'http://localhost:18081/kabusapi/token'
+        url = 'http://localhost:18080/kabusapi/token'
 
         response = requests.post(url, data=json_data, headers=headers)
 
         self.token = json.loads(response.text)['Token']
 
         self.bought_list = []
-        self.target_buy_count = 5
-        self.buy_percent = 0.19
+        self.target_buy_count = 3
+        self.buy_percent = 0.33
         self.total_cash = int(self.get_current_cash())
         self.buy_amount = self.total_cash * self.buy_percent
         self.t_now = datetime.datetime.now()
@@ -75,7 +75,7 @@ class autoInvestment:
             self.dbgout('main -> excption! ' + str(ex) + '')
 
     def get_current_price(self, code):
-        url = 'http://localhost:18081/kabusapi/board/' + str(code) + '@1'
+        url = 'http://localhost:18080/kabusapi/board/' + str(code) + '@1'
         req = urllib.request.Request(url, method='GET')
         req.add_header('Content-Type', 'application/json')
         req.add_header('X-API-KEY', self.token)
@@ -95,7 +95,7 @@ class autoInvestment:
             charset="utf8"
         )
         conn.cursor()
-        sql = f"SELECT * FROM daily_price WHERE={code}"
+        sql = f"SELECT * FROM daily_price WHERE code={code}"
         df = pd.read_sql(sql, conn, index_col='date')
         df = df.sort_index(ascending=False)
         df = df.drop('code', axis=1)
@@ -130,7 +130,7 @@ class autoInvestment:
                 lastday = ohlc.iloc[1].name
             else:
                 lastday = ohlc.iloc[0].name
-            closes = ohlc['Close'].sort_index()
+            closes = ohlc['close'].sort_index()
             ma = closes.rolling(window=window).mean()
             return ma.loc[lastday]
         except Exception as ex:
@@ -138,7 +138,7 @@ class autoInvestment:
             return None
 
     def get_stock_balance(self, code):
-        url = 'http://localhost:18081/kabusapi/positions'
+        url = 'http://localhost:18080/kabusapi/positions'
         params = {'product': 1}  # product - 0:すべて、1:現物、2:信用、3:先物、4:OP
         req = urllib.request.Request('{}?{}'.format(url, urllib.parse.urlencode(params)), method='GET')
         req.add_header('Content-Type', 'application/json')
@@ -147,7 +147,9 @@ class autoInvestment:
         with urllib.request.urlopen(req) as res:
             content = json.loads(res.read())
 
-        if len(content) > 0:
+        if len(content) > 0 or code == 'ALL':
+            if len(content) == 0:
+                return 'None Stock', 0
             allStocks = []
             for i in range(content):
                 stock_code = content['Symbol']
@@ -189,10 +191,19 @@ class autoInvestment:
             ma5_price = self.get_movingaverage(code, 5)
             ma10_price = self.get_movingaverage(code, 10)
 
+            url = 'http://localhost:18080/kabusapi/symbol/' + code + '@1'
+            req = urllib.request.Request(url, method='GET')
+            req.add_header('Content-Type', 'application/json')
+            req.add_header('X-API-KEY', self.token)
+            with urllib.request.urlopen(req) as res:
+                content = json.loads(res.read())
+            TradingUnit = int(content['TradingUnit'])
+
             buy_qty = 0
             if ask_price > 0:
                 buy_qty = self.buy_amount // ask_price
-            stock_name, stock_qty = self.get_stock_balance(code)[0]['name'], self.get_stock_balance(code)[0]['qyt']
+                buy_qty = (buy_qty // TradingUnit) * TradingUnit
+            stock_name, stock_qty = self.get_stock_balance(code)
 
             if current_price >= target_price and current_price >= ma5_price and current_price >= ma10_price:
                 if ma5_price > ma10_price:
@@ -208,12 +219,12 @@ class autoInvestment:
                            'DelivType': 2,
                            'FundType': '02',
                            'AccountType': 2,
-                           'Qty': buy_qty,
+                           'Qty': int(buy_qty),
                            'Price': target_price,
                            'ExpireDay': 0}
                     json_data = json.dumps(obj).encode('utf-8')
 
-                    url = 'http://localhost:18081/kabusapi/sendorder'
+                    url = 'http://localhost:18080/kabusapi/sendorder'
                     req = urllib.request.Request(url, json_data, method='POST')
                     req.add_header('Content-Type', 'application/json')
                     req.add_header('X-API-KEY', self.token)
@@ -222,7 +233,7 @@ class autoInvestment:
                         content = json.loads(res.read())
 
                     time.sleep(2)
-                    stock_name, bought_qty = self.get_target_price(code)
+                    stock_name, bought_qty = self.get_stock_balance(code)
                     if bought_qty > 0:
                         self.bought_list.append(code)
                         self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(bought_qty) +
@@ -263,7 +274,7 @@ class autoInvestment:
                                'ExpireDay': 0}
                         json_data = json.dumps(obj).encode('utf-8')
 
-                        url = 'http://localhost:18081/kabusapi/sendorder'
+                        url = 'http://localhost:18080/kabusapi/sendorder'
                         req = urllib.request.Request(url, json_data, method='POST')
                         req.add_header('Content-Type', 'application/json')
                         req.add_header('X-API-KEY', self.token)
