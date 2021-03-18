@@ -6,9 +6,9 @@ import urllib.request
 import datetime
 import pandas as pd
 import sys
-import mysql.connector as mydb
 from selenium import webdriver
 from bs4 import BeautifulSoup
+import DBSelecter
 
 
 class autoInvestment:
@@ -25,8 +25,8 @@ class autoInvestment:
         self.token = json.loads(response.text)['Token']
 
         self.bought_list = []
-        self.target_buy_count = 3
-        self.buy_percent = 0.33
+        self.target_buy_count = 4
+        self.buy_percent = 0.24
         self.total_cash = int(self.get_current_cash())
         self.buy_amount = self.total_cash * self.buy_percent
         self.t_now = datetime.datetime.now()
@@ -41,6 +41,7 @@ class autoInvestment:
             print('buy percent : ', self.buy_percent)
             print('buy_amount : ', self.buy_amount)
             print('start time : ', datetime.datetime.now().strftime('%m/%d %H:%M:%S'))
+            self.dbgout('Program Start!')
 
             while True:
 
@@ -85,36 +86,25 @@ class autoInvestment:
         print(content)
         return content['CurrentPrice'], content['AskPrice'], content['BidPrice']
 
-    def get_ohlc(self, code, qty):
-        conn = mydb.connect(
-            host="localhost",
-            port="3306",
-            user="root",
-            password=self.auth["DBPassword"],
-            db="investar",
-            charset="utf8"
-        )
-        conn.cursor()
-        sql = f"SELECT * FROM daily_price WHERE code={code}"
-        df = pd.read_sql(sql, conn, index_col='date')
-        df = df.sort_index(ascending=False)
-        df = df.drop('code', axis=1)
-        df = df.drop('volume', axis=1)
+    @staticmethod
+    def get_ohlc(code, qty):
+        selecter = DBSelecter.MarketDB()
+        df = selecter.get_daily_price(code)
         return df.iloc[:qty]
 
     def get_target_price(self, code):
         try:
             time_now = datetime.datetime.now()
-            str_today = time_now.strftime('%Y%m%d')
-            ohlc = self.get_ohlc(code, 10)
+            str_today = time_now.strftime('%Y-%m-%d')
+            ohlc = self.get_ohlc(code, 15)
             if str_today == str(ohlc.iloc[0].name):
                 today_open = ohlc.iloc[0].open
                 lastday = ohlc.iloc[1]
             else:
                 lastday = ohlc.iloc[0]
-                today_open = lastday[3]
-            lastday_high = lastday[1]
-            lastday_low = lastday[2]
+                today_open = lastday[2]
+            lastday_high = lastday[3]
+            lastday_low = lastday[4]
             target_price = today_open + (lastday_high - lastday_low) * 0.5
             return target_price
         except Exception as ex:
@@ -231,13 +221,15 @@ class autoInvestment:
 
                     with urllib.request.urlopen(req) as res:
                         content = json.loads(res.read())
-
-                    time.sleep(2)
+                    if content['Result'] == 0:
+                        self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(buy_qty) +
+                                    "EA Order complete !' " + content['OrderId'])
+                    time.sleep(5)
                     stock_name, bought_qty = self.get_stock_balance(code)
                     if bought_qty > 0:
                         self.bought_list.append(code)
                         self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(bought_qty) +
-                                    "EA bought !' " + content['OrderId'])
+                                    "EA Bought !' " + content['OrderId'])
 
         except urllib.error.HTTPError as e:
             print(e)
@@ -328,3 +320,4 @@ if __name__ == '__main__':
     symbol_list = ['1308', '1615', '1670', '1398', '2511', '2520', '1488', '1568', '1595', '2513']
     auto = autoInvestment()
     auto.main(symbol_list)
+

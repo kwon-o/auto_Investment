@@ -36,12 +36,12 @@ class MarketDB:
         else:
             print("ValueError: Code({}) doesn't exist.".format(code))
 
-        sql = f"SELECT * FROM daily_price WHERE code={code}"
+        sql = f"SELECT * FROM daily_price WHERE code={code} ORDER BY date desc"
         df = pd.read_sql(sql, self.conn)
         df.index = df['date']
         return df
 
 
-if __name__ == '__main__':
-    mk = MarketDB()
-    print(mk.get_daily_price(1305))
+# if __name__ == '__main__':
+#     mk = MarketDB()
+#     print(mk.get_daily_price(1305))
