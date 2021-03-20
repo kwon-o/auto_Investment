@@ -285,8 +285,9 @@ class autoInvestment:
             auth = json.load(f)
 
         loginURL = "https://s20.si0.kabu.co.jp/members/"
-        driver = webdriver.Chrome(
-            executable_path=r'C:\Users\KOJ\PycharmProjects\untitled\GitMaster\auto_Investment\chromedriver')
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option('excludeSwitches', ['enable-logging'])
+        driver = webdriver.Chrome(executable_path='chromedriver', options=options)
         driver.get(loginURL)
         driver.find_element_by_name('SsLogonUser').send_keys(auth['id'])
         driver.find_element_by_name('SsLogonPassword').send_keys(auth['loginPw'])
