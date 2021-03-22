@@ -36,6 +36,9 @@ class autoInvestment:
 
     def main(self, stock_list):
         try:
+            self.get_stock_balance('ALL')
+            self.total_cash = int(self.get_current_cash())
+            self.buy_amount = self.total_cash * self.buy_percent
             print('total cash : ', self.total_cash)
             print('buy percent : ', self.buy_percent)
             print('buy_amount : ', self.buy_amount)
@@ -69,7 +72,8 @@ class autoInvestment:
                     self.dbgout('self-destructed!')
                     sys.exit(0)
 
-                time.sleep(3)
+                print('Waiting to run...')
+                time.sleep(60)
 
         except Exception as ex:
             self.dbgout('main -> excption! ' + str(ex) + '')
@@ -135,6 +139,9 @@ class autoInvestment:
 
         with urllib.request.urlopen(req) as res:
             content = json.loads(res.read())
+
+        if code == 'ALL':
+            self.dbgout('Cash balance : ' + str(self.get_current_cash()))
 
         if len(content) > 0 or code == 'ALL':
             if len(content) == 0:
