@@ -29,8 +29,7 @@ class autoInvestment:
         self.buy_percent = 0.24
         self.total_cash = int(self.get_current_cash())
         self.buy_amount = self.total_cash * self.buy_percent
-        self.t_now = datetime.datetime.now()
-        sys.stdout = open('log/' + self.t_now.strftime('%Y%m%d') + '.log', 'w')
+        sys.stdout = open('log/' + datetime.datetime.now().strftime('%Y%m%d') + '.log', 'w')
 
     def __del__(self):
         sys.stdout.close()
@@ -44,29 +43,29 @@ class autoInvestment:
             self.dbgout('Program Start!')
 
             while True:
-
-                t_start = self.t_now.replace(hour=9, minute=5, second=0, microsecond=0)
-                t_sell = self.t_now.replace(hour=14, minute=45, second=0, microsecond=0)
-                t_exit = self.t_now.replace(hour=14, minute=58, second=0, microsecond=0)
+                t_now = datetime.datetime.now()
+                t_start = t_now.replace(hour=9, minute=5, second=0, microsecond=0)
+                t_sell = t_now.replace(hour=14, minute=45, second=0, microsecond=0)
+                t_exit = t_now.replace(hour=14, minute=58, second=0, microsecond=0)
 
                 today = datetime.datetime.today().weekday()
                 if today == 5 or today == 6:
                     print('Today is', 'Saturday.' if today == 5 else 'Sunday.')
                     sys.exit(0)
 
-                if t_start < self.t_now < t_sell:
+                if t_start < t_now < t_sell:
                     for sym in stock_list:
                         if len(self.bought_list) < self.target_buy_count:
                             self.buy_etf(sym)
                             time.sleep(1)
-                    if self.t_now.minute == 30 and 0 <= self.t_now.second <= 5:
+                    if t_now.minute == 30 and 0 <= t_now.second <= 5:
                         self.get_stock_balance('ALL')
                         time.sleep(5)
-                if t_sell < self.t_now < t_exit:
+                if t_sell < t_now < t_exit:
                     if self.sell_all():
                         self.dbgout('sell_all() returned True -> self-destructed!')
                         sys.exit(0)
-                if t_exit < self.t_now:
+                if t_exit < t_now:
                     self.dbgout('self-destructed!')
                     sys.exit(0)
 
@@ -309,7 +308,7 @@ class autoInvestment:
 
     def dbgout(self, message):
         print(datetime.datetime.now().strftime('[%m/%d %H:%M:%S]'), message)
-        toSlackMsg = {"text": self.t_now.strftime('[%m/%d %H:%M:%S]') + message}
+        toSlackMsg = {"text": datetime.datetime.now().strftime('[%m/%d %H:%M:%S]') + message}
         slack_webhook_url = self.auth["slackUrl"]
         headers = {
             "Content-type": "application/json",

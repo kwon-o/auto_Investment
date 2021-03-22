@@ -1,10 +1,6 @@
 import pandas as pd
 import mysql.connector as mydb
-import numpy as np
 import json
-import requests
-import sys
-from datetime import datetime
 
 
 class MarketDB:
@@ -30,7 +26,6 @@ class MarketDB:
 
     def get_daily_price(self, code):
         codes_keys = list(self.codes.keys())
-        codes_values = list(self.codes.values())
         if str(code) in codes_keys:
             pass
         else:
@@ -39,6 +34,7 @@ class MarketDB:
         sql = f"SELECT * FROM daily_price WHERE code={code} ORDER BY date desc"
         df = pd.read_sql(sql, self.conn)
         df.index = df['date']
+        df = df.drop('date', axis=1)
         return df
 
 
