@@ -29,10 +29,10 @@ class autoInvestment:
         self.buy_percent = 0.24
         self.total_cash = 0
         self.buy_amount = 0
-    #     sys.stdout = open('log/' + datetime.datetime.now().strftime('%Y%m%d') + '.log', 'w')
-    #
-    # def __del__(self):
-    #     sys.stdout.close()
+        sys.stdout = open('log/' + datetime.datetime.now().strftime('%Y%m%d') + '.log', 'w')
+
+    def __del__(self):
+        sys.stdout.close()
 
     def main(self, stock_list):
         try:
@@ -316,7 +316,7 @@ class autoInvestment:
 
         driver.close()
 
-        return df[1][1]
+        return df[1][0]
 
     def dbgout(self, message):
         print(datetime.datetime.now().strftime('[%m/%d %H:%M:%S]'), message)
