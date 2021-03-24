@@ -29,10 +29,10 @@ class autoInvestment:
         self.buy_percent = 0.24
         self.total_cash = 0
         self.buy_amount = 0
-        sys.stdout = open('log/' + datetime.datetime.now().strftime('%Y%m%d') + '.log', 'w')
-
-    def __del__(self):
-        sys.stdout.close()
+    #     sys.stdout = open('log/' + datetime.datetime.now().strftime('%Y%m%d') + '.log', 'w')
+    #
+    # def __del__(self):
+    #     sys.stdout.close()
 
     def main(self, stock_list):
         try:
@@ -63,9 +63,9 @@ class autoInvestment:
                         if len(self.bought_list) < self.target_buy_count:
                             self.buy_etf(sym)
                             time.sleep(1)
-                    if t_now.minute == 30 and 0 <= t_now.second <= 30:
+                    if t_now.minute == 30 and 0 <= t_now.second <= 20:
                         self.get_stock_balance('ALL')
-                        time.sleep(1)
+                        time.sleep(3)
                 if t_sell < t_now < t_exit:
                     if self.sell_all():
                         self.dbgout('sell_all() returned True -> self-destructed!')
@@ -89,7 +89,7 @@ class autoInvestment:
         with urllib.request.urlopen(req) as res:
             content = json.loads(res.read())
         if content['CurrentPrice'] is None:
-            content['CurrentPrice'] = 9999999
+            content['CurrentPrice'] = 1
         return content['CurrentPrice'], content['AskPrice'], content['BidPrice'], content['OpeningPrice']
 
     @staticmethod
@@ -234,7 +234,7 @@ class autoInvestment:
                     if content['Result'] == 0:
                         self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(buy_qty) +
                                     "EA Order complete !' " + content['OrderId'])
-                    time.sleep(5)
+                    time.sleep(3)
                     stock_name, bought_qty = self.get_stock_balance(code)
                     if bought_qty > 0:
                         self.bought_list.append(code)
@@ -329,6 +329,6 @@ class autoInvestment:
 
 
 if __name__ == '__main__':
-    symbol_list = ['1308', '1615', '1670', '1398', '2511', '2520', '1488', '1568', '1595', '2513']
+    symbol_list = ['1308', '1615', '1670', '1398', '2511', '2520', '1488', '1568', '1595', '2513', '1305']
     auto = autoInvestment()
     auto.main(symbol_list)

@@ -25,7 +25,6 @@ class DBUpdater:
         self.session = requests.Session()
         self.update_flg = 0
 
-
     @staticmethod
     def read_stock_code():
         return pd.read_csv('stock_code.csv', encoding='shift_jis')
