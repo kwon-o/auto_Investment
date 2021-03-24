@@ -29,10 +29,10 @@ class autoInvestment:
         self.buy_percent = 0.24
         self.total_cash = 0
         self.buy_amount = 0
-        sys.stdout = open('log/' + datetime.datetime.now().strftime('%Y%m%d') + '.log', 'w')
-
-    def __del__(self):
-        sys.stdout.close()
+    #     sys.stdout = open('log/' + datetime.datetime.now().strftime('%Y%m%d') + '.log', 'w')
+    #
+    # def __del__(self):
+    #     sys.stdout.close()
 
     def main(self, stock_list):
         try:
@@ -63,9 +63,9 @@ class autoInvestment:
                         if len(self.bought_list) < self.target_buy_count:
                             self.buy_etf(sym)
                             time.sleep(1)
-                    if t_now.minute == 30 and 0 <= t_now.second <= 5:
+                    if t_now.minute == 30 and 0 <= t_now.second <= 30:
                         self.get_stock_balance('ALL')
-                        time.sleep(5)
+                        time.sleep(1)
                 if t_sell < t_now < t_exit:
                     if self.sell_all():
                         self.dbgout('sell_all() returned True -> self-destructed!')
@@ -75,7 +75,7 @@ class autoInvestment:
                     sys.exit(0)
 
                 print('Waiting to run...')
-                time.sleep(60)
+                time.sleep(30)
 
         except Exception as ex:
             self.dbgout('main -> excption! ' + str(ex) + '')
@@ -88,8 +88,9 @@ class autoInvestment:
 
         with urllib.request.urlopen(req) as res:
             content = json.loads(res.read())
-        print(content)
-        return content['CurrentPrice'], content['AskPrice'], content['BidPrice']
+        if content['CurrentPrice'] is None:
+            content['CurrentPrice'] = 9999999
+        return content['CurrentPrice'], content['AskPrice'], content['BidPrice'], content['OpeningPrice']
 
     @staticmethod
     def get_ohlc(code, qty):
@@ -99,18 +100,12 @@ class autoInvestment:
 
     def get_target_price(self, code):
         try:
-            time_now = datetime.datetime.now()
-            str_today = time_now.strftime('%Y-%m-%d')
-            ohlc = self.get_ohlc(code, 15)
-            if str_today == str(ohlc.iloc[0].name):
-                today_open = ohlc.iloc[0].open
-                lastday = ohlc.iloc[1]
-            else:
-                lastday = ohlc.iloc[0]
-                today_open = lastday[2]
-            lastday_high = lastday[3]
-            lastday_low = lastday[4]
-            target_price = today_open + (lastday_high - lastday_low) * 0.5
+            current_price, ask_price, bid_price, open_price = self.get_current_price(code)
+            ohlc = self.get_ohlc(code, 3)
+            lastday = ohlc.iloc[0]
+            lastday_high = lastday[2]
+            lastday_low = lastday[3]
+            target_price = open_price + (lastday_high - lastday_low) * 0.5
             return target_price
         except Exception as ex:
             self.dbgout("'get_target_price() -> exception! " + str(ex) + "'")
@@ -170,7 +165,6 @@ class autoInvestment:
 
             with urllib.request.urlopen(req) as res:
                 content = json.loads(res.read())
-                print(content)
             if len(content) == 0:
                 url = 'http://localhost:18080/kabusapi/symbol/' + str(code) + '@1'
                 req = urllib.request.Request(url, method='GET')
@@ -192,7 +186,7 @@ class autoInvestment:
                 print('code:', code, 'in', self.bought_list)
                 return False
 
-            current_price, ask_price, bid_price = self.get_current_price(code)
+            current_price, ask_price, bid_price, open_price = self.get_current_price(code)
             target_price = self.get_target_price(code)
             ma5_price = self.get_movingaverage(code, 5)
             ma10_price = self.get_movingaverage(code, 10)
@@ -266,19 +260,20 @@ class autoInvestment:
                     return True
 
                 for s in sellStocks:
+                    current_price, ask_price, bid_price, open_price = self.get_current_price(s['code'])
                     if s['qty'] != 0:
                         obj = {'Password': self.auth['APIPassword'],
                                'Symbol': s['code'],
                                'Exchange': 1,
                                'SecurityType': 1,
-                               'FrontOrderType': 17,
+                               'FrontOrderType': 27,
                                'Side': '1',
                                'CashMargin': 1,
                                'DelivType': 0,
                                'FundType': '  ',
                                'AccountType': 2,
                                'Qty': s['qty'],
-                               'Price': 0,
+                               'Price': current_price,
                                'ExpireDay': 0}
                         json_data = json.dumps(obj).encode('utf-8')
 

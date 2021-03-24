@@ -24,7 +24,7 @@ class autoInvestment:
 
         self.token = json.loads(response.text)['Token']
 
-        self.bought_list = []
+        self.bought_list = ['1670']
         self.target_buy_count = 4
         self.buy_percent = 0.24
         self.total_cash = 0
@@ -52,6 +52,10 @@ class autoInvestment:
     #         pprint.pprint(content)
     #     except Exception as e:
     #         print(e)
+
+    def bbb(self, code):
+        if code in self.bought_list:
+            print('already')
 
     def get_stock_balance(self, code):
         if code == 'ALL':
@@ -135,6 +139,37 @@ class autoInvestment:
 
         return df[1][1]
 
+    @staticmethod
+    def get_ohlc(code, qty):
+        selecter = DBSelecter.MarketDB()
+        df = selecter.get_daily_price(code)
+        return df.iloc[:qty]
+
+    def get_target_price(self, code):
+        try:
+            time_now = datetime.datetime.now()
+            str_today = time_now.strftime('%Y-%m-%d')
+            ohlc = self.get_ohlc(code, 15)
+            if str_today == str(ohlc.iloc[0].name):
+                print('1')
+                today_open = ohlc.iloc[0].open
+                lastday = ohlc.iloc[1]
+            else:
+                print('2')
+                lastday = ohlc.iloc[0]
+                print(lastday)
+                today_open = lastday[1]
+                print(today_open)
+            lastday_high = lastday[2]
+            lastday_low = lastday[3]
+
+            print(lastday_high, lastday_low, (lastday_high - lastday_low) * 0.5)
+            target_price = today_open + (lastday_high - lastday_low) * 0.5
+            return target_price
+        except Exception as ex:
+            self.dbgout("'get_target_price() -> exception! " + str(ex) + "'")
+            return None
+
     def dbgout(self, message):
         print(datetime.datetime.now().strftime('[%m/%d %H:%M:%S]'), message)
         # toSlackMsg = {"text": datetime.datetime.now().strftime('[%m/%d %H:%M:%S]') + message}
@@ -148,5 +183,6 @@ class autoInvestment:
 if __name__ == '__main__':
     symbol_list = ['1308', '1615', '1670', '1398', '2511', '2520', '1488', '1568', '1595', '2513']
     auto = autoInvestment()
-    print(auto.get_stock_balance('1670'))
+    print(auto.get_target_price('1670'))
+
     # print(auto.get_stock_balance('1305'))
