@@ -53,11 +53,6 @@ class autoInvestment:
                 t_sell = t_now.replace(hour=14, minute=45, second=0, microsecond=0)
                 t_exit = t_now.replace(hour=14, minute=58, second=0, microsecond=0)
 
-                today = datetime.datetime.today().weekday()
-                if today == 5 or today == 6:
-                    print('Today is', 'Saturday.' if today == 5 else 'Sunday.')
-                    sys.exit(0)
-
                 if t_start < t_now < t_breakS or t_breakE < t_now < t_sell:
                     for sym in stock_list:
                         if len(self.bought_list) < self.target_buy_count:
@@ -78,25 +73,34 @@ class autoInvestment:
                 time.sleep(30)
 
         except Exception as ex:
-            self.dbgout('main -> excption! ' + str(ex) + '')
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            self.dbgout('main -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
 
     def get_current_price(self, code):
-        url = 'http://localhost:18080/kabusapi/board/' + str(code) + '@1'
-        req = urllib.request.Request(url, method='GET')
-        req.add_header('Content-Type', 'application/json')
-        req.add_header('X-API-KEY', self.token)
+        try:
+            url = 'http://localhost:18080/kabusapi/board/' + str(code) + '@1'
+            req = urllib.request.Request(url, method='GET')
+            req.add_header('Content-Type', 'application/json')
+            req.add_header('X-API-KEY', self.token)
 
-        with urllib.request.urlopen(req) as res:
-            content = json.loads(res.read())
-        if content['CurrentPrice'] is None:
-            content['CurrentPrice'] = 1
-        return content['CurrentPrice'], content['AskPrice'], content['BidPrice'], content['OpeningPrice']
+            with urllib.request.urlopen(req) as res:
+                content = json.loads(res.read())
+            if content['CurrentPrice'] is None:
+                content['CurrentPrice'] = 1
+            return content['CurrentPrice'], content['AskPrice'], content['BidPrice'], content['OpeningPrice']
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            self.dbgout('get_current_price(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' +
+                        str(ex) + ')')
 
-    @staticmethod
-    def get_ohlc(code, qty):
-        selecter = DBSelecter.MarketDB()
-        df = selecter.get_daily_price(code)
-        return df.iloc[:qty]
+    def get_ohlc(self, code, qty):
+        try:
+            selecter = DBSelecter.MarketDB()
+            df = selecter.get_daily_price(code)
+            return df.iloc[:qty]
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            self.dbgout('get_ohlc(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
 
     def get_target_price(self, code):
         try:
@@ -108,8 +112,9 @@ class autoInvestment:
             target_price = open_price + (lastday_high - lastday_low) * 0.5
             return target_price
         except Exception as ex:
-            self.dbgout("'get_target_price() -> exception! " + str(ex) + "'")
-            return None
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            self.dbgout('get_target_price() -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
+            return 999999
 
     def get_movingaverage(self, code, window):
         try:
@@ -124,61 +129,67 @@ class autoInvestment:
             ma = closes.rolling(window=window).mean()
             return ma.loc[lastday]
         except Exception as ex:
-            self.dbgout("'get_movingaverage() -> exception! " + str(ex) + "'")
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            self.dbgout('get_movingaverage() -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
             return None
 
     def get_stock_balance(self, code):
-        if code == 'ALL':
-            self.dbgout('Cash balance : ' + str(self.get_current_cash()))
-
-            url = 'http://localhost:18080/kabusapi/positions'
-            params = {'product': 1}  # product - 0:すべて、1:現物、2:信用、3:先物、4:OP
-            req = urllib.request.Request('{}?{}'.format(url, urllib.parse.urlencode(params)), method='GET')
-            req.add_header('Content-Type', 'application/json')
-            req.add_header('X-API-KEY', self.token)
-
-            with urllib.request.urlopen(req) as res:
-                content = json.loads(res.read())
-            if len(content) == 0:
-                return 'None Stock', 0
-            allStocks = []
-            cnt = 0
-            for i in content:
-                stock_code = i['Symbol']
-                stock_name = i['SymbolName']
-                stock_qty = i['LeavesQty']
-                print(stock_code, stock_name, stock_qty)
-                cnt += 1
-                if code == 'ALL':
-                    self.dbgout(str(cnt) + '. ' + stock_code + '( ' + stock_name + ' )' + ' : ' + str(stock_qty))
-                    allStocks.append({'code': stock_code, 'name': stock_name, 'qty': stock_qty})
-                if stock_code == code:
-                    return stock_code, stock_qty
+        try:
             if code == 'ALL':
-                return allStocks
-        elif code is not 'ALL':
-            url = 'http://localhost:18080/kabusapi/positions'
-            params = {'product': 1, 'symbol': code}
-            req = urllib.request.Request('{}?{}'.format(url, urllib.parse.urlencode(params)), method='GET')
-            req.add_header('Content-Type', 'application/json')
-            req.add_header('X-API-KEY', self.token)
+                self.dbgout('Cash balance : ' + str(self.get_current_cash()))
 
-            with urllib.request.urlopen(req) as res:
-                content = json.loads(res.read())
-            if len(content) == 0:
-                url = 'http://localhost:18080/kabusapi/symbol/' + str(code) + '@1'
-                req = urllib.request.Request(url, method='GET')
+                url = 'http://localhost:18080/kabusapi/positions'
+                params = {'product': 1}  # product - 0:すべて、1:現物、2:信用、3:先物、4:OP
+                req = urllib.request.Request('{}?{}'.format(url, urllib.parse.urlencode(params)), method='GET')
                 req.add_header('Content-Type', 'application/json')
                 req.add_header('X-API-KEY', self.token)
 
                 with urllib.request.urlopen(req) as res:
                     content = json.loads(res.read())
-                stock_code = content['SymbolName']
-                return stock_code, 0
-            else:
-                stock_code = content[0]['SymbolName']
-                stock_qty = content[0]['LeavesQty']
-                return stock_code, stock_qty
+                if len(content) == 0:
+                    return [{'code': '----', 'name': 'None Stock', 'qty': 0}]
+                allStocks = []
+                cnt = 0
+                for i in content:
+                    stock_code = i['Symbol']
+                    stock_name = i['SymbolName']
+                    stock_qty = i['LeavesQty']
+                    print(stock_code, stock_name, stock_qty)
+                    cnt += 1
+                    if code == 'ALL':
+                        self.dbgout(str(cnt) + '. ' + stock_code + '( ' + stock_name + ' )' + ' : ' + str(stock_qty))
+                        allStocks.append({'code': stock_code, 'name': stock_name, 'qty': stock_qty})
+                    if stock_code == code:
+                        return stock_code, stock_qty
+                if code == 'ALL':
+                    return allStocks
+            elif code is not 'ALL':
+                url = 'http://localhost:18080/kabusapi/positions'
+                params = {'product': 1, 'symbol': code}
+                req = urllib.request.Request('{}?{}'.format(url, urllib.parse.urlencode(params)), method='GET')
+                req.add_header('Content-Type', 'application/json')
+                req.add_header('X-API-KEY', self.token)
+
+                with urllib.request.urlopen(req) as res:
+                    content = json.loads(res.read())
+                if len(content) == 0:
+                    url = 'http://localhost:18080/kabusapi/symbol/' + str(code) + '@1'
+                    req = urllib.request.Request(url, method='GET')
+                    req.add_header('Content-Type', 'application/json')
+                    req.add_header('X-API-KEY', self.token)
+
+                    with urllib.request.urlopen(req) as res:
+                        content = json.loads(res.read())
+                    stock_code = content['SymbolName']
+                    return stock_code, 0
+                else:
+                    stock_code = content[0]['SymbolName']
+                    stock_qty = content[0]['LeavesQty']
+                    return stock_code, stock_qty
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            self.dbgout('get_stock_balance(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' +
+                        str(ex) + ')')
 
     def buy_etf(self, code):
         try:
@@ -206,40 +217,39 @@ class autoInvestment:
             stock_name, stock_qty = self.get_stock_balance(code)
 
             if current_price >= target_price and current_price >= ma5_price and current_price >= ma10_price:
-                if ma5_price > ma10_price:
-                    print(stock_name + '(' + str(code) + ') ' + str(buy_qty) + 'EA : ' + str(current_price) +
-                          ' meets the buy condition!')
-                    obj = {'Password': self.auth['APIPassword'],
-                           'Symbol': code,
-                           'Exchange': 1,
-                           'SecurityType': 1,
-                           'FrontOrderType': 20,
-                           'Side': '2',
-                           'CashMargin': 1,
-                           'DelivType': 2,
-                           'FundType': '02',
-                           'AccountType': 2,
-                           'Qty': int(buy_qty),
-                           'Price': target_price,
-                           'ExpireDay': 0}
-                    json_data = json.dumps(obj).encode('utf-8')
+                print(stock_name + '(' + str(code) + ') ' + str(buy_qty) + 'EA : ' + str(current_price) +
+                      ' meets the buy condition!')
+                obj = {'Password': self.auth['APIPassword'],
+                       'Symbol': code,
+                       'Exchange': 1,
+                       'SecurityType': 1,
+                       'FrontOrderType': 20,
+                       'Side': '2',
+                       'CashMargin': 1,
+                       'DelivType': 2,
+                       'FundType': '02',
+                       'AccountType': 2,
+                       'Qty': int(buy_qty),
+                       'Price': target_price,
+                       'ExpireDay': 0}
+                json_data = json.dumps(obj).encode('utf-8')
 
-                    url = 'http://localhost:18080/kabusapi/sendorder'
-                    req = urllib.request.Request(url, json_data, method='POST')
-                    req.add_header('Content-Type', 'application/json')
-                    req.add_header('X-API-KEY', self.token)
+                url = 'http://localhost:18080/kabusapi/sendorder'
+                req = urllib.request.Request(url, json_data, method='POST')
+                req.add_header('Content-Type', 'application/json')
+                req.add_header('X-API-KEY', self.token)
 
-                    with urllib.request.urlopen(req) as res:
-                        content = json.loads(res.read())
-                    if content['Result'] == 0:
-                        self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(buy_qty) +
-                                    "EA Order complete !' " + content['OrderId'])
-                    time.sleep(3)
-                    stock_name, bought_qty = self.get_stock_balance(code)
-                    if bought_qty > 0:
-                        self.bought_list.append(code)
-                        self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(bought_qty) +
-                                    "EA Bought !' " + content['OrderId'])
+                with urllib.request.urlopen(req) as res:
+                    content = json.loads(res.read())
+                if content['Result'] == 0:
+                    self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(buy_qty) +
+                                "EA Order complete !' " + content['OrderId'])
+                time.sleep(3)
+                stock_name, bought_qty = self.get_stock_balance(code)
+                if bought_qty > 0:
+                    self.bought_list.append(code)
+                    self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(bought_qty) +
+                                "EA Bought !' " + content['OrderId'])
 
         except urllib.error.HTTPError as e:
             print(e)
@@ -247,16 +257,20 @@ class autoInvestment:
             pprint.pprint(content)
 
         except Exception as ex:
-            self.dbgout("'buy_etf(" + str(code) + ") -> exception! " + str(ex) + "'")
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            self.dbgout('buy_etf() -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
 
     def sell_all(self):
         try:
             while True:
                 sellStocks = self.get_stock_balance('ALL')
                 total_qty = 0
+                print(sellStocks)
                 for s in sellStocks:
-                    total_qty += s['qty']
+                    print(s)
+                    total_qty += int(s['qty'])
                 if total_qty == 0:
+                    print('0')
                     return True
 
                 for s in sellStocks:
@@ -288,35 +302,39 @@ class autoInvestment:
                         print('sell', s['code'], s['name'], s['qty'], '->', content['OrderId'])
 
         except Exception as ex:
-            self.dbgout("sell_all() -> exception! " + str(ex))
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            self.dbgout('sell_all() -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
 
-    @staticmethod
-    def get_current_cash():
-        with open('auth.json', 'r') as f:
-            auth = json.load(f)
+    def get_current_cash(self):
+        try:
+            with open('auth.json', 'r') as f:
+                auth = json.load(f)
+            loginURL = "https://s20.si0.kabu.co.jp/members/"
+            options = webdriver.ChromeOptions()
+            options.add_experimental_option('excludeSwitches', ['enable-logging'])
+            driver = webdriver.Chrome(executable_path='chromedriver', options=options)
+            driver.get(loginURL)
+            driver.find_element_by_name('SsLogonUser').send_keys(auth['id'])
+            driver.find_element_by_name('SsLogonPassword').send_keys(auth['loginPw'])
+            driver.find_element_by_id('image1').click()
 
-        loginURL = "https://s20.si0.kabu.co.jp/members/"
-        options = webdriver.ChromeOptions()
-        options.add_experimental_option('excludeSwitches', ['enable-logging'])
-        driver = webdriver.Chrome(executable_path='chromedriver', options=options)
-        driver.get(loginURL)
-        driver.find_element_by_name('SsLogonUser').send_keys(auth['id'])
-        driver.find_element_by_name('SsLogonPassword').send_keys(auth['loginPw'])
-        driver.find_element_by_id('image1').click()
+            s = requests.Session()
+            for cookie in driver.get_cookies():
+                s.cookies.set(cookie['name'], cookie['value'])
 
-        s = requests.Session()
-        for cookie in driver.get_cookies():
-            s.cookies.set(cookie['name'], cookie['value'])
+            cashCheckURL = "https://s20.si0.kabu.co.jp/ap/PC/Assets/Kanougaku/Stock"
+            result = s.get(cashCheckURL).text
+            soup = BeautifulSoup(result, "html.parser")
+            table = soup.find_all("table", class_="table1")
+            df = pd.read_html(str(table))[0]
 
-        cashCheckURL = "https://s20.si0.kabu.co.jp/ap/PC/Assets/Kanougaku/Stock"
-        result = s.get(cashCheckURL).text
-        soup = BeautifulSoup(result, "html.parser")
-        table = soup.find_all("table", class_="table1")
-        df = pd.read_html(str(table))[0]
+            driver.close()
 
-        driver.close()
+            return df[1][0]
 
-        return df[1][0]
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            self.dbgout('get_current_cash() -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
 
     def dbgout(self, message):
         print(datetime.datetime.now().strftime('[%m/%d %H:%M:%S]'), message)
@@ -330,5 +348,10 @@ class autoInvestment:
 
 if __name__ == '__main__':
     symbol_list = ['1308', '1615', '1670', '1398', '2511', '2520', '1488', '1568', '1595', '2513', '1305']
+    weekday = datetime.datetime.today().weekday()
     auto = autoInvestment()
-    auto.main(symbol_list)
+    if weekday in [0, 1, 2, 3, 4]:
+        # auto.main(symbol_list)
+        auto.sell_all()
+    else:
+        sys.exit(0)

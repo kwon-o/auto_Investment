@@ -38,6 +38,6 @@ class MarketDB:
         return df
 
 
-# if __name__ == '__main__':
-#     mk = MarketDB()
-#     print(mk.get_daily_price(1670))
+if __name__ == '__main__':
+    mk = MarketDB()
+    print(mk.get_daily_price(1305))
