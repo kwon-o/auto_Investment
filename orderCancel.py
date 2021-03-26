@@ -20,7 +20,8 @@ url = 'http://localhost:18080/kabusapi/token'
 response = requests.post(url, data=json_data, headers=headers)
 token = json.loads(response.text)['Token']
 
-obj = {'OrderID': '20210318A01N21544932', 'Password': auth['APIPassword'] }
+
+obj = {'OrderID': '20210326A01N30613921', 'Password': auth['APIPassword']}
 json_data = json.dumps(obj).encode('utf8')
 
 url = 'http://localhost:18080/kabusapi/cancelorder'

@@ -26,7 +26,7 @@ class autoInvestment:
 
         self.bought_list = []
         self.target_buy_count = 4
-        self.buy_percent = 0.24
+        self.buy_percent = 0.33
         self.total_cash = 0
         self.buy_amount = 0
     #     sys.stdout = open('log/' + datetime.datetime.now().strftime('%Y%m%d') + '.log', 'w')
@@ -54,13 +54,13 @@ class autoInvestment:
                 t_exit = t_now.replace(hour=14, minute=58, second=0, microsecond=0)
 
                 if t_start < t_now < t_breakS or t_breakE < t_now < t_sell:
+                    if t_now.minute == 30 and 0 <= t_now.second <= 20:
+                        self.get_stock_balance('ALL')
                     for sym in stock_list:
                         if len(self.bought_list) < self.target_buy_count:
                             self.buy_etf(sym)
                             time.sleep(1)
-                    if t_now.minute == 30 and 0 <= t_now.second <= 20:
-                        self.get_stock_balance('ALL')
-                        time.sleep(3)
+                    continue
                 if t_sell < t_now < t_exit:
                     if self.sell_all():
                         self.dbgout('sell_all() returned True -> self-destructed!')
@@ -113,7 +113,8 @@ class autoInvestment:
             return target_price
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
-            self.dbgout('get_target_price() -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
+            self.dbgout('get_target_price(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) +
+                        ', ' + str(ex) + ')')
             return 999999
 
     def get_movingaverage(self, code, window):
@@ -216,21 +217,22 @@ class autoInvestment:
                 buy_qty = (buy_qty // TradingUnit) * TradingUnit
             stock_name, stock_qty = self.get_stock_balance(code)
 
-            if current_price >= target_price and current_price >= ma5_price and current_price >= ma10_price:
+            if current_price >= target_price and current_price >= ma5_price and current_price >= ma10_price and \
+                    buy_qty != 0:
                 print(stock_name + '(' + str(code) + ') ' + str(buy_qty) + 'EA : ' + str(current_price) +
                       ' meets the buy condition!')
                 obj = {'Password': self.auth['APIPassword'],
                        'Symbol': code,
                        'Exchange': 1,
                        'SecurityType': 1,
-                       'FrontOrderType': 20,
+                       'FrontOrderType': 27,
                        'Side': '2',
                        'CashMargin': 1,
                        'DelivType': 2,
                        'FundType': '02',
                        'AccountType': 2,
                        'Qty': int(buy_qty),
-                       'Price': target_price,
+                       'Price': current_price,
                        'ExpireDay': 0}
                 json_data = json.dumps(obj).encode('utf-8')
 
@@ -258,7 +260,7 @@ class autoInvestment:
 
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
-            self.dbgout('buy_etf() -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
+            self.dbgout('buy_etf(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
 
     def sell_all(self):
         try:
@@ -347,11 +349,11 @@ class autoInvestment:
 
 
 if __name__ == '__main__':
-    symbol_list = ['1308', '1615', '1670', '1398', '2511', '2520', '1488', '1568', '1595', '2513', '1305']
+    symbol_list = ['1305', '1308', '1615', '2511', '2520', '1568', '2513', '1311',
+                   '2510', '1343', '1547', '1540', '1593']
     weekday = datetime.datetime.today().weekday()
     auto = autoInvestment()
     if weekday in [0, 1, 2, 3, 4]:
-        # auto.main(symbol_list)
-        auto.sell_all()
+        auto.main(symbol_list)
     else:
         sys.exit(0)
