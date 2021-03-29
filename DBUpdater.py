@@ -94,7 +94,7 @@ class DBUpdater:
         self.get_session()
         for code in self.codes:
             timeSeriesLink = "https://s20.si0.kabu.co.jp/ap/PC/InvInfo/Market/StockDetail/Default?Symbol=" \
-                             + code + "&Exchange=TSE&Category=PRICE_HISTORY"
+                             + str(code) + "&Exchange=TSE&Category=PRICE_HISTORY"
             result = self.session.get(timeSeriesLink).text
             soup = BeautifulSoup(result, "html.parser")
             table = soup.find_all("table", class_="tb3")
@@ -116,7 +116,7 @@ class DBUpdater:
             df = pd.DataFrame(df)
 
             self.replace_into_db(df, code)
-            print('Code ' + code + ': Time series data replace was successful!')
+            print('Code ' + str(code) + ': Time series data replace was successful!')
 
     def replace_into_db(self, df, code):
         with self.conn.cursor() as curs:

@@ -232,7 +232,7 @@ class autoInvestment:
                        'FundType': '02',
                        'AccountType': 2,
                        'Qty': int(buy_qty),
-                       'Price': current_price,
+                       'Price': target_price,
                        'ExpireDay': 0}
                 json_data = json.dumps(obj).encode('utf-8')
 
@@ -246,18 +246,11 @@ class autoInvestment:
                 if content['Result'] == 0:
                     self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(buy_qty) +
                                 "EA Order complete !' " + content['OrderId'])
-                time.sleep(3)
-                stock_name, bought_qty = self.get_stock_balance(code)
-                if bought_qty > 0:
-                    self.bought_list.append(code)
-                    self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(bought_qty) +
-                                "EA Bought !' " + content['OrderId'])
-
+                time.sleep(1)
         except urllib.error.HTTPError as e:
             print(e)
             content = json.loads(e.read())
             pprint.pprint(content)
-
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             self.dbgout('buy_etf(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
@@ -276,20 +269,19 @@ class autoInvestment:
                     return True
 
                 for s in sellStocks:
-                    current_price, ask_price, bid_price, open_price = self.get_current_price(s['code'])
                     if s['qty'] != 0:
                         obj = {'Password': self.auth['APIPassword'],
                                'Symbol': s['code'],
                                'Exchange': 1,
                                'SecurityType': 1,
-                               'FrontOrderType': 27,
+                               'FrontOrderType': 16,
                                'Side': '1',
                                'CashMargin': 1,
                                'DelivType': 0,
                                'FundType': '  ',
                                'AccountType': 2,
                                'Qty': s['qty'],
-                               'Price': current_price,
+                               'Price': 0,
                                'ExpireDay': 0}
                         json_data = json.dumps(obj).encode('utf-8')
 
