@@ -19,20 +19,31 @@ class autoInvestment:
         headers = {'content-type': 'application/json'}
         json_data = json.dumps({'APIPassword': self.auth['APIPassword'], }).encode('utf8')
         url = 'http://localhost:18080/kabusapi/token'
-
         response = requests.post(url, data=json_data, headers=headers)
-
         self.token = json.loads(response.text)['Token']
+
+        loginURL = "https://s20.si0.kabu.co.jp/members/"
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option('excludeSwitches', ['enable-logging'])
+        driver = webdriver.Chrome(executable_path='chromedriver', options=options)
+        driver.get(loginURL)
+        driver.find_element_by_name('SsLogonUser').send_keys(self.auth['id'])
+        driver.find_element_by_name('SsLogonPassword').send_keys(self.auth['loginPw'])
+        driver.find_element_by_id('image1').click()
+        self.s = requests.Session()
+        for cookie in driver.get_cookies():
+            self.s.cookies.set(cookie['name'], cookie['value'])
+        driver.close()
 
         self.bought_list = []
         self.target_buy_count = 4
         self.buy_percent = 0.33
         self.total_cash = 0
         self.buy_amount = 0
-    #     sys.stdout = open('log/' + datetime.datetime.now().strftime('%Y%m%d') + '.log', 'w')
-    #
-    # def __del__(self):
-    #     sys.stdout.close()
+        sys.stdout = open('log/' + datetime.datetime.now().strftime('%Y%m%d') + '.log', 'w')
+
+    def __del__(self):
+        sys.stdout.close()
 
     def main(self, stock_list):
         try:
@@ -47,11 +58,11 @@ class autoInvestment:
 
             while True:
                 t_now = datetime.datetime.now()
-                t_start = t_now.replace(hour=9, minute=5, second=0, microsecond=0)
+                t_start = t_now.replace(hour=9, minute=0, second=0, microsecond=0)
                 t_breakS = t_now.replace(hour=11, minute=30, second=0, microsecond=0)
                 t_breakE = t_now.replace(hour=12, minute=30, second=0, microsecond=0)
-                t_sell = t_now.replace(hour=14, minute=45, second=0, microsecond=0)
-                t_exit = t_now.replace(hour=14, minute=58, second=0, microsecond=0)
+                t_sell = t_now.replace(hour=14, minute=50, second=0, microsecond=0)
+                t_exit = t_now.replace(hour=15, minute=00, second=0, microsecond=0)
 
                 if t_start < t_now < t_breakS or t_breakE < t_now < t_sell:
                     if t_now.minute == 30 and 0 <= t_now.second <= 20:
@@ -301,31 +312,12 @@ class autoInvestment:
 
     def get_current_cash(self):
         try:
-            with open('auth.json', 'r') as f:
-                auth = json.load(f)
-            loginURL = "https://s20.si0.kabu.co.jp/members/"
-            options = webdriver.ChromeOptions()
-            options.add_experimental_option('excludeSwitches', ['enable-logging'])
-            driver = webdriver.Chrome(executable_path='chromedriver', options=options)
-            driver.get(loginURL)
-            driver.find_element_by_name('SsLogonUser').send_keys(auth['id'])
-            driver.find_element_by_name('SsLogonPassword').send_keys(auth['loginPw'])
-            driver.find_element_by_id('image1').click()
-
-            s = requests.Session()
-            for cookie in driver.get_cookies():
-                s.cookies.set(cookie['name'], cookie['value'])
-
             cashCheckURL = "https://s20.si0.kabu.co.jp/ap/PC/Assets/Kanougaku/Stock"
-            result = s.get(cashCheckURL).text
+            result = self.s.get(cashCheckURL).text
             soup = BeautifulSoup(result, "html.parser")
             table = soup.find_all("table", class_="table1")
             df = pd.read_html(str(table))[0]
-
-            driver.close()
-
             return df[1][0]
-
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             self.dbgout('get_current_cash() -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')

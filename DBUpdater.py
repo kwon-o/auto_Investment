@@ -143,7 +143,7 @@ class DBUpdater:
             headers = {
                 "Content-type": "application/json",
                 "Authorization": "Bearer " + self.auth["slackToken"]}
-            requests.post(slack_webhook_url, headers=headers, data=json.dumps(toSlackMsg))
+        requests.post(slack_webhook_url, headers=headers, data=json.dumps(toSlackMsg))
 
 
 if __name__ == '__main__':
