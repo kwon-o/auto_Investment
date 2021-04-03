@@ -36,7 +36,7 @@ class autoInvestment:
         driver.close()
 
         self.bought_list = []
-        self.target_buy_count = 4
+        self.target_buy_count = 3
         self.buy_percent = 0.33
         self.total_cash = 0
         self.buy_amount = 0
@@ -120,7 +120,7 @@ class autoInvestment:
             lastday = ohlc.iloc[0]
             lastday_high = lastday[2]
             lastday_low = lastday[3]
-            target_price = open_price + (lastday_high - lastday_low) * 0.5
+            target_price = open_price + (lastday_high - lastday_low) * 0.4
             return target_price
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -257,6 +257,7 @@ class autoInvestment:
                 if content['Result'] == 0:
                     self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(buy_qty) +
                                 "EA Order complete !' " + content['OrderId'])
+                    self.bought_list.append(code)
                 time.sleep(1)
         except urllib.error.HTTPError as e:
             print(e)
