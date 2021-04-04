@@ -257,7 +257,12 @@ class autoInvestment:
                 if content['Result'] == 0:
                     self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(buy_qty) +
                                 "EA Order complete !' " + content['OrderId'])
+                time.sleep(1)
+                stock_name, bought_qty = self.get_stock_balance(code)
+                if bought_qty > 0:
                     self.bought_list.append(code)
+                    self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(bought_qty) +
+                                "EA Bought !' " + content['OrderId'])
                 time.sleep(1)
         except urllib.error.HTTPError as e:
             print(e)
