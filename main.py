@@ -21,20 +21,7 @@ class autoInvestment:
         url = 'http://localhost:18080/kabusapi/token'
         response = requests.post(url, data=json_data, headers=headers)
         self.token = json.loads(response.text)['Token']
-
-        loginURL = "https://s20.si0.kabu.co.jp/members/"
-        options = webdriver.ChromeOptions()
-        options.add_experimental_option('excludeSwitches', ['enable-logging'])
-        driver = webdriver.Chrome(executable_path='chromedriver', options=options)
-        driver.get(loginURL)
-        driver.find_element_by_name('SsLogonUser').send_keys(self.auth['id'])
-        driver.find_element_by_name('SsLogonPassword').send_keys(self.auth['loginPw'])
-        driver.find_element_by_id('image1').click()
-        self.s = requests.Session()
-        for cookie in driver.get_cookies():
-            self.s.cookies.set(cookie['name'], cookie['value'])
-        driver.close()
-
+        self.s = self.get_session()
         self.bought_list = []
         self.target_buy_count = 3
         self.buy_percent = 0.33
@@ -44,6 +31,21 @@ class autoInvestment:
 
     def __del__(self):
         sys.stdout.close()
+
+    def get_session(self):
+        loginURL = "https://s20.si0.kabu.co.jp/members/"
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option('excludeSwitches', ['enable-logging'])
+        driver = webdriver.Chrome(executable_path='chromedriver', options=options)
+        driver.get(loginURL)
+        driver.find_element_by_name('SsLogonUser').send_keys(self.auth['id'])
+        driver.find_element_by_name('SsLogonPassword').send_keys(self.auth['loginPw'])
+        driver.find_element_by_id('image1').click()
+        s = requests.Session()
+        for cookie in driver.get_cookies():
+            s.cookies.set(cookie['name'], cookie['value'])
+        driver.close()
+        return s
 
     def main(self, stock_list):
         try:
@@ -64,7 +66,16 @@ class autoInvestment:
                 t_sell = t_now.replace(hour=14, minute=50, second=0, microsecond=0)
                 t_exit = t_now.replace(hour=15, minute=00, second=0, microsecond=0)
 
-                if t_start < t_now < t_breakS or t_breakE < t_now < t_sell:
+                if t_start < t_now < t_breakS:
+                    if t_now.minute == 30 and 0 <= t_now.second <= 20:
+                        self.get_stock_balance('ALL')
+                    for sym in stock_list:
+                        if len(self.bought_list) < self.target_buy_count:
+                            self.buy_etf(sym)
+                            time.sleep(1)
+                    continue
+                if t_breakE < t_now < t_sell:
+                    self.get_session()
                     if t_now.minute == 30 and 0 <= t_now.second <= 20:
                         self.get_stock_balance('ALL')
                     for sym in stock_list:
