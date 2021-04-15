@@ -126,7 +126,7 @@ class DBUpdater:
                 curs.execute(sql)
             self.conn.commit()
 
-    def update_daily_price(self):
+    def input_data(self):
         for code in self.codes:
             df = self.read_Time_Series_Data(code)
             if df is None:
@@ -135,7 +135,6 @@ class DBUpdater:
 
     def execute_daily(self):
         self.update_comp_info()
-        # self.update_daily_price() # Run only the first time
         if self.update_flg == 1:
             self.add_Time_Series_data()
             toSlackMsg = {"text": datetime.now().strftime('[%m/%d %H:%M:%S]') + 'Database Update successful!'}
@@ -143,12 +142,13 @@ class DBUpdater:
             headers = {
                 "Content-type": "application/json",
                 "Authorization": "Bearer " + self.auth["slackToken"]}
-        requests.post(slack_webhook_url, headers=headers, data=json.dumps(toSlackMsg))
+            requests.post(slack_webhook_url, headers=headers, data=json.dumps(toSlackMsg))
 
 
 if __name__ == '__main__':
     weekday = datetime.today().weekday()
     dbu = DBUpdater()
+    # dbu.input_data()
     if weekday in [0, 1, 2, 3, 4]:
         dbu.execute_daily()
     else:
