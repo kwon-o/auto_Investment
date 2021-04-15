@@ -27,8 +27,18 @@
 
 ## 使用方法
 1. DBに時系列データをアップロードします。
-  * (フリーETFのリスト入手先追加要)
-  * (DBUpdater修正要)
+  * DBでetc/CreateTable.sqlを実行します。
+  * 最初の1回はDBUpdater.pyのコメントを解除して実行します。
+  ``` python
+  if __name__ == '__main__':
+    weekday = datetime.today().weekday()
+    dbu = DBUpdater()
+    # dbu.input_data() <<< 最初の1回のみ解除後、実行
+    if weekday in [0, 1, 2, 3, 4]:
+        dbu.execute_daily()
+    else:
+        sys.exit(0)
+  ```
 2. main.py, DBUpdater.pyをWindowsのタスクスケジューラに追加します。
   * (手順追加要)
 3. 必要によってmain.pyのinitバラメータを修正します。
