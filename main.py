@@ -251,7 +251,6 @@ class autoInvestment:
                        'Side': '2',
                        'CashMargin': 1,
                        'DelivType': 2,
-                       'FundType': '02',
                        'AccountType': 2,
                        'Qty': int(buy_qty),
                        'Price': target_price,
