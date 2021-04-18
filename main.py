@@ -22,11 +22,16 @@ class autoInvestment:
         response = requests.post(url, data=json_data, headers=headers)
         self.token = json.loads(response.text)['Token']
         self.s = self.get_session()
-        self.bought_list = []
+
         self.target_buy_count = 3
         self.buy_percent = 0.33
         self.total_cash = 0
         self.buy_amount = 0
+
+        self.symbol_list = ['1305', '1308', '1615', '2511', '2520', '1568', '2513', '1311',
+                            '2510', '1343', '1547', '1540', '1593']
+        self.bought_list = []
+
         sys.stdout = open('log/' + datetime.datetime.now().strftime('%Y%m%d') + '.log', 'w')
 
     def __del__(self):
@@ -47,7 +52,7 @@ class autoInvestment:
         driver.close()
         return s
 
-    def main(self, stock_list):
+    def main(self):
         try:
             self.get_stock_balance('ALL')
             self.total_cash = int(self.get_current_cash())
@@ -60,7 +65,7 @@ class autoInvestment:
 
             while True:
                 t_now = datetime.datetime.now()
-                t_start = t_now.replace(hour=9, minute=0, second=0, microsecond=0)
+                t_start = t_now.replace(hour=9, minute=3, second=0, microsecond=0)
                 t_breakS = t_now.replace(hour=11, minute=30, second=0, microsecond=0)
                 t_breakE = t_now.replace(hour=12, minute=30, second=0, microsecond=0)
                 t_sell = t_now.replace(hour=14, minute=50, second=0, microsecond=0)
@@ -69,16 +74,15 @@ class autoInvestment:
                 if t_start < t_now < t_breakS:
                     if t_now.minute == 30 and 0 <= t_now.second <= 20:
                         self.get_stock_balance('ALL')
-                    for sym in stock_list:
+                    for sym in self.symbol_list:
                         if len(self.bought_list) < self.target_buy_count:
                             self.buy_etf(sym)
                             time.sleep(1)
                     continue
                 if t_breakE < t_now < t_sell:
-                    self.get_session()
                     if t_now.minute == 30 and 0 <= t_now.second <= 20:
                         self.get_stock_balance('ALL')
-                    for sym in stock_list:
+                    for sym in self.symbol_list:
                         if len(self.bought_list) < self.target_buy_count:
                             self.buy_etf(sym)
                             time.sleep(1)
@@ -219,20 +223,20 @@ class autoInvestment:
             if code in self.bought_list:
                 print('code:', code, 'in', self.bought_list)
                 return False
-
             current_price, ask_price, bid_price, open_price = self.get_current_price(code)
             target_price = self.get_target_price(code)
             ma5_price = self.get_movingaverage(code, 5)
             ma10_price = self.get_movingaverage(code, 10)
 
-            url = 'http://localhost:18080/kabusapi/symbol/' + code + '@1'
+            url = 'http://localhost:18080/kabusapi/symbol/' + str(code) + '@1'
             req = urllib.request.Request(url, method='GET')
             req.add_header('Content-Type', 'application/json')
             req.add_header('X-API-KEY', self.token)
             with urllib.request.urlopen(req) as res:
                 content = json.loads(res.read())
             TradingUnit = int(content['TradingUnit'])
-
+            UpperLimit = content['UpperLimit']
+            LowerLimit = content['LowerLimit']
             buy_qty = 0
             if ask_price > 0:
                 buy_qty = self.buy_amount // ask_price
@@ -241,8 +245,9 @@ class autoInvestment:
 
             if current_price >= target_price and current_price >= ma5_price and current_price >= ma10_price and \
                     buy_qty != 0:
-                print(stock_name + '(' + str(code) + ') ' + str(buy_qty) + 'EA : ' + str(current_price) +
-                      ' meets the buy condition!')
+                self.dbgout(stock_name + '(' + str(code) + ') ' + str(buy_qty) + 'EA : ' + str(target_price) +
+                            ' meets the buy condition!')
+                self.dbgout('UpperLimit : ' + str(UpperLimit) + ', LowerLimit : ' + str(LowerLimit))
                 obj = {'Password': self.auth['APIPassword'],
                        'Symbol': code,
                        'Exchange': 1,
@@ -265,19 +270,18 @@ class autoInvestment:
                 with urllib.request.urlopen(req) as res:
                     content = json.loads(res.read())
                 if content['Result'] == 0:
-                    self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(buy_qty) +
+                    self.dbgout("buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(buy_qty) +
                                 "EA * " + str(target_price) + "Yen Order complete !' " + content['OrderId'])
                 time.sleep(1)
                 stock_name, bought_qty = self.get_stock_balance(code)
                 if bought_qty > 0:
                     self.bought_list.append(code)
-                    self.dbgout("'buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(bought_qty) +
+                    self.dbgout("buy_etf(" + str(stock_name) + ' : ' + str(code) + ') -> ' + str(bought_qty) +
                                 "EA Bought !' " + content['OrderId'])
                 time.sleep(1)
         except urllib.error.HTTPError as e:
-            print(e)
             content = json.loads(e.read())
-            pprint.pprint(content)
+            self.dbgout(e + '//' +content)
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             self.dbgout('buy_etf(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
@@ -349,11 +353,9 @@ class autoInvestment:
 
 
 if __name__ == '__main__':
-    symbol_list = ['1305', '1308', '1615', '2511', '2520', '1568', '2513', '1311',
-                   '2510', '1343', '1547', '1540', '1593']
     weekday = datetime.datetime.today().weekday()
     auto = autoInvestment()
     if weekday in [0, 1, 2, 3, 4]:
-        auto.main(symbol_list)
+        auto.main()
     else:
         sys.exit(0)
