@@ -1,7 +1,6 @@
 import requests
 import time
 import json
-import pprint
 import urllib.request
 import datetime
 import pandas as pd
@@ -68,8 +67,8 @@ class autoInvestment:
                 t_start = t_now.replace(hour=9, minute=3, second=0, microsecond=0)
                 t_breakS = t_now.replace(hour=11, minute=30, second=0, microsecond=0)
                 t_breakE = t_now.replace(hour=12, minute=30, second=0, microsecond=0)
-                t_sell = t_now.replace(hour=14, minute=50, second=0, microsecond=0)
-                t_exit = t_now.replace(hour=15, minute=00, second=0, microsecond=0)
+                t_sell = t_now.replace(hour=20, minute=50, second=0, microsecond=0)
+                t_exit = t_now.replace(hour=21, minute=00, second=0, microsecond=0)
 
                 if t_start < t_now < t_breakS:
                     if t_now.minute == 30 and 0 <= t_now.second <= 20:
@@ -113,6 +112,9 @@ class autoInvestment:
                 content = json.loads(res.read())
             if content['CurrentPrice'] is None:
                 content['CurrentPrice'] = 1
+                content['AskPrice'] = 1
+                content['BidPrice'] = 1
+                content['OpeningPrice'] = 1
             return content['CurrentPrice'], content['AskPrice'], content['BidPrice'], content['OpeningPrice']
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -136,7 +138,7 @@ class autoInvestment:
             lastday_high = lastday[2]
             lastday_low = lastday[3]
             target_price = open_price + (lastday_high - lastday_low) * 0.3
-            return target_price
+            return int(target_price)
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             self.dbgout('get_target_price(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) +
@@ -238,7 +240,7 @@ class autoInvestment:
             UpperLimit = content['UpperLimit']
             LowerLimit = content['LowerLimit']
             buy_qty = 0
-            if ask_price > 0:
+            if ask_price > 0 and ask_price != 1:
                 buy_qty = self.buy_amount // ask_price
                 buy_qty = (buy_qty // TradingUnit) * TradingUnit
             stock_name, stock_qty = self.get_stock_balance(code)
@@ -259,7 +261,9 @@ class autoInvestment:
                        'AccountType': 2,
                        'Qty': int(buy_qty),
                        'Price': target_price,
-                       'ExpireDay': 0}
+                       'ExpireDay': 0,
+                       'ClosePositionOrder': 0,
+                       'FundType': '02'}
                 json_data = json.dumps(obj).encode('utf-8')
 
                 url = 'http://localhost:18080/kabusapi/sendorder'
@@ -281,7 +285,7 @@ class autoInvestment:
                 time.sleep(1)
         except urllib.error.HTTPError as e:
             content = json.loads(e.read())
-            self.dbgout(e + '//' +content)
+            self.dbgout(e + '//' + content)
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             self.dbgout('buy_etf(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
