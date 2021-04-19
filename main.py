@@ -67,8 +67,8 @@ class autoInvestment:
                 t_start = t_now.replace(hour=9, minute=3, second=0, microsecond=0)
                 t_breakS = t_now.replace(hour=11, minute=30, second=0, microsecond=0)
                 t_breakE = t_now.replace(hour=12, minute=30, second=0, microsecond=0)
-                t_sell = t_now.replace(hour=20, minute=50, second=0, microsecond=0)
-                t_exit = t_now.replace(hour=21, minute=00, second=0, microsecond=0)
+                t_sell = t_now.replace(hour=14, minute=50, second=0, microsecond=0)
+                t_exit = t_now.replace(hour=15, minute=00, second=0, microsecond=0)
 
                 if t_start < t_now < t_breakS:
                     if t_now.minute == 30 and 0 <= t_now.second <= 20:
