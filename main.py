@@ -26,6 +26,7 @@ class autoInvestment:
         self.buy_percent = 0.33
         self.total_cash = 0
         self.buy_amount = 0
+        self.k = 0.3
 
         self.symbol_list = ['1305', '1308', '1615', '2511', '2520', '1568', '2513', '1311',
                             '2510', '1343', '1547', '1540', '1593']
@@ -137,7 +138,7 @@ class autoInvestment:
             lastday = ohlc.iloc[0]
             lastday_high = lastday[2]
             lastday_low = lastday[3]
-            target_price = open_price + (lastday_high - lastday_low) * 0.3
+            target_price = (open_price + (lastday_high - lastday_low) * self.k) - 1
             return int(target_price)
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
