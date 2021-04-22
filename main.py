@@ -285,8 +285,9 @@ class autoInvestment:
                                 "EA Bought !' " + content['OrderId'])
                 time.sleep(1)
         except urllib.error.HTTPError as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
             content = json.loads(e.read())
-            self.dbgout(e + '//' + content)
+            self.dbgout('buy_etf(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + content + ')')
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             self.dbgout('buy_etf(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
