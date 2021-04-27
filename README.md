@@ -46,10 +46,12 @@ beautifulsoup4            4.6.0
 3. 必要によってmain.pyのinitバラメータを修正します。
   ``` python
   def __init__(self):
+    ...
     self.symbol_list = ['1305', '1308', ... ]     # 投資したい株式の候補
     self.target_buy_count = 3                     # 一日に取引するETFの最大数
     self.buy_percent = 0.33                       # 一種目あたり現金投資比率
     self.k = 0.3                                  # Volatility breakout strategyのk値 ( 0 <= k <= 1 )
+    ...
   ```
 
 ## 実行例
