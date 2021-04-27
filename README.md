@@ -8,7 +8,9 @@
 
 ## モジュール / ライブラリ情報
 ``` python
-# 追加要
+requests                  2.25.1
+selenium                  3.141.0
+beautifulsoup4            4.6.0
 ```
 ## 基本設定
 1. seleniumを使うために自分が利用しているブラウザのバージョンと合うselenium WebDriverをダウンロードします。
@@ -42,7 +44,13 @@
 2. main.py, DBUpdater.pyをWindowsのタスクスケジューラに追加します。
   * (手順追加要)
 3. 必要によってmain.pyのinitバラメータを修正します。
-  * (修正/追加要)
+  ``` python
+  def __init__(self):
+    self.symbol_list = ['1305', '1308', ... ]     # 投資したい株式の候補
+    self.target_buy_count = 3                     # 一日に取引するETFの最大数
+    self.buy_percent = 0.33                       # 一種目あたり現金投資比率
+    self.k = 0.3                                  # Volatility breakout strategyのk値 ( 0 <= k <= 1 )
+  ```
 
 ## 実行例
 
