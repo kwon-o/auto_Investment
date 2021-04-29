@@ -22,14 +22,15 @@ class autoInvestment:
         self.token = json.loads(response.text)['Token']
         self.s = self.get_session()
 
-        self.target_buy_count = 3
-        self.buy_percent = 0.33
         self.total_cash = 0
         self.buy_amount = 0
-        self.k = 0.3
 
         self.symbol_list = ['1305', '1308', '1615', '2511', '2520', '1568', '2513', '1311',
                             '2510', '1343', '1547', '1540', '1593']
+        self.target_buy_count = 3
+        self.buy_percent = 0.33
+        self.k = 0.3
+
         self.bought_list = []
 
         sys.stdout = open('log/' + datetime.datetime.now().strftime('%Y%m%d') + '.log', 'w')
@@ -287,7 +288,8 @@ class autoInvestment:
         except urllib.error.HTTPError as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             content = json.loads(e.read())
-            self.dbgout('buy_etf(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + content + ')')
+            self.dbgout('buy_etf(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', Error Massge ↓')
+            self.dbgout(content)
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             self.dbgout('buy_etf(' + code + ') -> excption!! (line : ' + str(exc_tb.tb_lineno) + ', ' + str(ex) + ')')
